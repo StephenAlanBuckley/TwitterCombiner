@@ -8,26 +8,16 @@ $break_length = 7;
 $check_for_word = strtolower($argv[1]);
 
 $tweet_strings = array();
-$tweet_strings['thedad_beach'] = getRecentTweetString('dad_beach');
+$tweet_strings['dad_beach'] = getRecentTweetString('dad_beach');
 $tweet_strings['msalicenutting'] = getRecentTweetString('msalicenutting');
+$complete_text = $tweet_strings['dad_beach'] . ' ' . $tweet_strings['msalicenutting'];
 
-$complete_text = $tweet_strings['thedad_beach'] . ' ' . $tweet_strings['msalicenutting'];
 
-
-//$complete_text = preg_replace("/\s\#[^\s]*/", '', $complete_text);
-//$complete_text = preg_replace("/[^A-Za-z0-9\s]/", '', $complete_text);
 $complete_text = preg_replace("/\n/", ' ', $complete_text);
 $complete_text = preg_replace("/\s\s/", ' ', $complete_text);
 
-/*$first_random = array_rand($tweet_strings);
-$second_random = array_rand($tweet_strings);
-$third_random = array_rand($tweet_strings);
-$random_combo = $tweet_strings[$first_random] . $tweet_strings[$second_random] . $tweet_strings[$third_random];
-*/
 
 $markov_table = generate_markov_table($complete_text, $break_length);
-//$markov_table = generate_markov_table($random_combo, 5);
-$text = array();
 
 if ($check_for_word) {
     for($i = 0; $i < 1; $i++) {
@@ -36,9 +26,6 @@ if ($check_for_word) {
 } else {
     print_r(ucwords(generate_markov_text(5000, $markov_table, $break_length)) . "\n");
 }
-
-
-print_r($text);
 
 function getRecentTweetString($twitter_handle, $include_replies = false, $include_retweets = false) {
     $settings = array(

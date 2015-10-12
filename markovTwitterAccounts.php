@@ -3,9 +3,10 @@
 require_once('TwitterAPIExchange.php');
 require_once('markov.php');
 
-public class TwitterMarkov {
+class TwitterMarkov {
 
     private $twitter_handles = array();
+    private $break_length = 5;
 
     public function __construct() {
     }
@@ -31,7 +32,8 @@ public class TwitterMarkov {
             $recent_tweets = $this->getRecentTweetString($handle);
             $all_recent_tweets_text .= $recent_tweets;
         }
-        $markov_table = generate_markov_table($all_recent_tweets_text, $break_length);
+        $markov_table = generate_markov_table($all_recent_tweets_text, $this->break_length);
+        return generate_markov_text(5000, $markov_table, $this->break_length);
     }
 
     private function getRecentTweetString($twitter_handle, $include_replies = false, $include_retweets = false) {
@@ -53,10 +55,17 @@ public class TwitterMarkov {
                      ->performRequest();
         $output= json_decode($output);
         foreach ($output as $tweet) {
-            $tweet_text = cleanUpText($tweet->text);
+            $tweet_text = $this->cleanUpText($tweet->text);
             $transcript .= strtolower($tweet_text) . " ";
         }
 
         return $transcript;
+    }
+
+    function cleanUpText($text) {
+          $text = preg_replace('/Http(s)?:\/\/[^\s]*/i', '', $text); //remove_urls
+          $text = preg_replace('/(^|\s)@([a-z0-9_]+)/i', '', $text);//remove twitter handles
+          $text = str_replace('&amp;', '&', $text); //fix ampersands
+          return $text;
     }
 }
