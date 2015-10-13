@@ -2,13 +2,15 @@
 
 require_once('TwitterAPIExchange.php');
 require_once('markov.php');
+require_once('_Markov.php');
 
-class TwitterMarkov {
+class TwitterMarkov extends Markov {
 
     private $twitter_handles = array();
-    private $break_length = 5;
 
     public function __construct() {
+        $this->break_length = 5;
+        parent::__construct();
     }
 
     public function addTwitterHandle($handle) {
@@ -62,7 +64,7 @@ class TwitterMarkov {
         return $transcript;
     }
 
-    function cleanUpText($text) {
+    private function cleanUpText($text) {
           $text = preg_replace('/Http(s)?:\/\/[^\s]*/i', '', $text); //remove_urls
           $text = preg_replace('/(^|\s)@([a-z0-9_]+)/i', '', $text);//remove twitter handles
           $text = str_replace('&amp;', '&', $text); //fix ampersands
