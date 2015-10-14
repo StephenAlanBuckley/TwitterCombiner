@@ -11,15 +11,36 @@ class Markov {
     public function __construct() {
     }
 
+    public function setChunkLength($length) {
+        $this->chunk_length = $length;
+    }
+
+    public function setBreakType($type) {
+        switch ($type) {
+            case self::BREAK_TYPE_CHUNK:
+                $this->break_type = self::BREAK_TYPE_CHUNK;
+                break;
+            case self::BREAK_TYPE_WORD:
+                $this->break_type = self::BREAK_TYPE_WORD;
+                break;
+        }
+    }
+
     public function addTextToChain($text) {
-        if ($this->break_type == self::BREAK_TYPE_CHUNK) {
-            return $this->addTextToChainByChunks($text);
-        } else {
-            return $this->addTextToChainByWords($text);
+        switch ($this->break_type) {
+            case self::BREAK_TYPE_CHUNK:
+                return $this->addTextToChainByChunks($text);
+                break;
+            case self::BREAK_TYPE_WORD:
+                return $this->addTextToChainByWords($text);
+                break;
         }
     }
 
     public function createStringFromChain($length = null) {
+    }
+
+    public function getChain() {
         return $this->chain;
     }
 
@@ -44,6 +65,21 @@ class Markov {
     }
 
     private function addTextToChainByWords($text) {
-      // do this one
+      // keeping it simple for now and only splitting on spaces
+        $words = explode(" ", $text);
+        $previous_word = null;
+        foreach ($words as $current_word) {
+            if (!is_null($previous_word)) {
+                if (array_key_exists($current_word, $this->chain[$previous_word])) {
+                    $this->chain[$previous_word][$current_word] += 1;
+                } else {
+                    $this->chain[$previous_word][$current_word] = 1;
+                }
+            }
+            if (!array_key_exists($current_word, $this->chain)) {
+                $this->chain[$current_word] = array();
+            }
+            $previous_word = $current_word;
+        }
     }
 }
