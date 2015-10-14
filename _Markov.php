@@ -4,6 +4,7 @@ class Markov {
     const BREAK_TYPE_CHUNK = 1;
     const BREAK_TYPE_WORD = 2;
 
+    private $weighted = true;
     private $chunk_length = 5;
     private $chain = array();
     private $break_type = self::BREAK_TYPE_CHUNK;
@@ -38,11 +39,48 @@ class Markov {
     }
 
     public function createStringFromChain($length = 100) {
+        if ($this->weighted) {
+            return $this->createStringFromChainWeighted($length);
+        } else {
+            return $this->createStringFromChainUnweighted($length);
+        }
+    }
+
+    public function createStringFromChainUnweighted($length) {
         $created_string = '';
         $current_part = array_rand($this->chain);
         $created_string .= $current_part . ' ';
-        while (strlen($created_string) < $length && is_array($this->chain[$current_part])) {
+        while (strlen($created_string) < $length
+                && array_key_exists($current_part, $this->chain)
+                && count($this->chain[$current_part]) > 0
+        ) {
             $next_part = array_rand($this->chain[$current_part]);
+            $created_string .= $next_part . ' ';
+            $current_part = $next_part;
+        }
+        return $created_string;
+    }
+
+    public function createStringFromChainWeighted($length) {
+        $created_string = '';
+        $current_part = array_rand($this->chain);
+        $created_string .= $current_part . ' ';
+        while (strlen($created_string) < $length
+                && array_key_exists($current_part, $this->chain)
+                && count($this->chain[$current_part]) > 0
+        ) {
+            $weight_sum = 0;
+            foreach ($this->chain[$current_part] as $next => $weight) {
+                $weight_sum += $weight;
+            }
+            $next_seed = rand(1, $weight_sum);
+            foreach ($this->chain[$current_part] as $next => $weight) {
+                $next_seed -= $weight;
+                if ($next_seed <= 0) {
+                    $next_part = $next;
+                    break;
+                }
+            }
             $created_string .= $next_part . ' ';
             $current_part = $next_part;
         }
