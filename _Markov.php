@@ -37,7 +37,16 @@ class Markov {
         }
     }
 
-    public function createStringFromChain($length = null) {
+    public function createStringFromChain($length = 100) {
+        $created_string = '';
+        $current_part = array_rand($this->chain);
+        $created_string .= $current_part . ' ';
+        while (strlen($created_string) < $length && is_array($this->chain[$current_part])) {
+            $next_part = array_rand($this->chain[$current_part]);
+            $created_string .= $next_part . ' ';
+            $current_part = $next_part;
+        }
+        return $created_string;
     }
 
     public function getChain() {

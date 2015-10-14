@@ -8,5 +8,5 @@ $text = "Yo dog, I heard you like chains so I put a chain in your chain so you c
 $mark->setBreakType(Markov::BREAK_TYPE_WORD);
 $mark->setChunkLength(3);
 $mark->addTextToChain($text);
-$creation = $mark->getChain();
+$creation = $mark->createStringFromChain();
 print_r($creation);
