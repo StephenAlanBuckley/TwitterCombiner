@@ -1,15 +1,21 @@
 <?php
 
 require_once('TwitterAPIExchange.php');
-require_once('markov.php');
-require_once('_Markov.php');
+require_once('Markov.php');
 
 class TwitterMarkov extends Markov {
 
     private $twitter_handles = array();
+    private $twitter_settings = array();
 
-    public function __construct() {
-        $this->break_length = 5;
+    public function __construct($twitter_settings) {
+        $this->break_length = 3;
+        $this->twitter_settings = array(
+            'oauth_access_token' => $twitter_settings['oauth_access_token'],
+            'oauth_access_token_secret' => $twitter_settings['oauth_access_token_secret'],
+            'consumer_key' => $twitter_settings['consumer_key'],
+            'consumer_secret' => $twitter_settings['consumer_secret']
+        );
         parent::__construct();
     }
 
@@ -28,30 +34,23 @@ class TwitterMarkov extends Markov {
         return true;
     }
 
-    public function getMarkovOfAllAccountsRecentTweets() {
+    public function getMarkovOfAllAccountsRecentTweets($length = 140) {
         $all_recent_tweets_text = '';
         foreach ($this->twitter_handles as $handle) {
             $recent_tweets = $this->getRecentTweetString($handle);
             $all_recent_tweets_text .= $recent_tweets;
         }
-        $markov_table = generate_markov_table($all_recent_tweets_text, $this->break_length);
-        return generate_markov_text(5000, $markov_table, $this->break_length);
+        $markov_table = $this->addTextToChain($all_recent_tweets_text);
+        return $this->createStringFromChain($length);
     }
 
     private function getRecentTweetString($twitter_handle, $include_replies = false, $include_retweets = false) {
-        $settings = array(
-            'oauth_access_token' => "2550724993-9rNgO8fVfzLu3UlIXY2dMBq0JTYXHML0DgWH3Ir",
-            'oauth_access_token_secret' => "LkVR3S7A5CyG1xOavXSRPJV0XQFEBfh8IXB4UpYRpPZwQ",
-            'consumer_key' => "MQMaeAEdm5PRnEvjXl777ZwVx",
-            'consumer_secret' => "ovY8COkG2t1a2YotAX372H8VwQQiubJ0ezQvGXfcPDghDh8Fsb"
-        );
-
         $get_fields ='?screen_name=' . $twitter_handle .
                         '&count=3200&include_rts=' . ($include_retweets ? 'true' : 'false') .
                         '&exclude_replies=' . ($include_replies ? 'false' : 'true');
         $url = 'https://api.twitter.com/1.1/statuses/user_timeline.json';
         $requestMethod = 'GET';
-        $twitter = new TwitterAPIExchange($settings);
+        $twitter = new TwitterAPIExchange($this->twitter_settings);
         $output= $twitter->setGetfield($get_fields)
                      ->buildOauth($url, $requestMethod)
                      ->performRequest();

@@ -1,12 +1,12 @@
 <?php
 
-require_once('_Markov.php');
+require_once('TwitterMarkov.php');
+require_once('secrets.php');
 
-$mark = new Markov();
-$text = "Yo dog, I heard you like chains so I put a chain in your chain so you could chain while you're chaining.";
-
-$mark->setBreakType(Markov::BREAK_TYPE_WORD);
-$mark->addTextToChain($text);
-$creation = $mark->createStringFromChain(100000);
+$mark = new TwitterMarkov($secrets);
+$mark->setBreakType(Markov::BREAK_TYPE_CHUNK);
+$mark->addTwitterHandle('dad_beach');
+$mark->addTwitterHandle('alexisohanian');
+$creation = $mark->getMarkovOfAllAccountsRecentTweets(1000);
 print_r($creation);
 print_r("\n");

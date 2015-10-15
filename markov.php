@@ -1,94 +1,99 @@
 <?php
-/*
-    PHP Markov Chain text generator 1.0
-    Copyright (c) 2008, Hay Kranen <http://www.haykranen.nl/projects/markov/>
 
-    License (MIT / X11 license)
+class Markov {
+    const BREAK_TYPE_CHUNK = 1;
+    const BREAK_TYPE_WORD = 2;
 
-    Permission is hereby granted, free of charge, to any person
-    obtaining a copy of this software and associated documentation
-    files (the "Software"), to deal in the Software without
-    restriction, including without limitation the rights to use,
-    copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the
-    Software is furnished to do so, subject to the following
-    conditions:
+    private $chunk_length = 5;
+    private $chain = array();
+    private $break_type = self::BREAK_TYPE_CHUNK;
 
-    The above copyright notice and this permission notice shall be
-    included in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-    HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-    OTHER DEALINGS IN THE SOFTWARE.
-*/
-
-function generate_markov_table($text, $look_forward) {
-    $table = array();
-
-    // now walk through the text and make the index table
-    for ($i = 0; $i < strlen($text); $i++) {
-        $char = substr($text, $i, $look_forward);
-        if (!isset($table[$char])) $table[$char] = array();
+    public function __construct() {
     }
 
-    // walk the array again and count the numbers
-    for ($i = 0; $i < (strlen($text) - $look_forward); $i++) {
-        $char_index = substr($text, $i, $look_forward);
-        $char_count = substr($text, $i+$look_forward, $look_forward);
+    public function setChunkLength($length) {
+        $this->chunk_length = $length;
+    }
 
-        if (isset($table[$char_index][$char_count])) {
-            $table[$char_index][$char_count]++;
-        } else {
-            $table[$char_index][$char_count] = 1;
+    public function setBreakType($type) {
+        switch ($type) {
+            case self::BREAK_TYPE_CHUNK:
+                $this->break_type = self::BREAK_TYPE_CHUNK;
+                break;
+            case self::BREAK_TYPE_WORD:
+                $this->break_type = self::BREAK_TYPE_WORD;
+                break;
         }
     }
 
-    return $table;
-}
-
-function generate_markov_text($length, $table, $look_forward, $start_string = null) {
-    // get first character
-    //if ($start_string == null || strlen($start_string) < $look_forward) {
-        $char = array_rand($table);
-        $o = $char;
-      /*
-    } else {
-        $o = substr($start_string, -1 * $look_forward);
-        if (!in_array($o, $table)) {
-            echo "$o nt in table";
-            die;
-        }
-    }
-    */
-
-    for ($i = 0; $i < ($length / $look_forward); $i++) {
-        $newchar = return_weighted_char($table[$char]);
-
-        if ($newchar) {
-            $char = $newchar;
-            $o .= $newchar;
-        } else {
-            $char = array_rand($table);
+    public function addTextToChain($text) {
+        switch ($this->break_type) {
+            case self::BREAK_TYPE_CHUNK:
+                return $this->addTextToChainByChunks($text);
+                break;
+            case self::BREAK_TYPE_WORD:
+                return $this->addTextToChainByWords($text);
+                break;
         }
     }
 
-    return $o;
-}
+    public function createStringFromChain($length = 100) {
+        //If this is n-gram chunks we don't want a space between, if it's words then we do!
+        $between_parts = '';
+        if ($this->break_type == self::BREAK_TYPE_WORD) {
+            $between_parts = ' ';
+        }
+        $created_string = '';
+        $current_part = array_rand($this->chain);
+        $created_string .= $current_part . $between_parts;
+        while (strlen($created_string) < $length && is_array($this->chain[$current_part])) {
+            $next_part = array_rand($this->chain[$current_part]);
+            $created_string .= $next_part . $between_parts;
+            $current_part = $next_part;
+        }
+        return $created_string;
+    }
 
+    public function getChain() {
+        return $this->chain;
+    }
 
-function return_weighted_char($array) {
-    if (!$array) return false;
+    private function addTextToChainByChunks($text) {
+        $remaining_text = $text;
+        $previous_chunk = null;
+        while (strlen($remaining_text) > $this->chunk_length) {
+            $current_chunk = substr($remaining_text, 0, $this->chunk_length);
+            if (!is_null($previous_chunk)) {
+                if (array_key_exists($current_chunk, $this->chain[$previous_chunk])) {
+                    $this->chain[$previous_chunk][$current_chunk] += 1;
+                } else {
+                    $this->chain[$previous_chunk][$current_chunk] = 1;
+                }
+            }
+            if (!array_key_exists($current_chunk, $this->chain)) {
+                $this->chain[$current_chunk] = array();
+            }
+            $remaining_text = substr($remaining_text, $this->chunk_length);
+            $previous_chunk = $current_chunk;
+        }
+    }
 
-    $total = array_sum($array);
-    $rand  = mt_rand(1, $total);
-    foreach ($array as $item => $weight) {
-        if ($rand <= $weight) return $item;
-        $rand -= $weight;
+    private function addTextToChainByWords($text) {
+      // keeping it simple for now and only splitting on spaces
+        $words = explode(" ", $text);
+        $previous_word = null;
+        foreach ($words as $current_word) {
+            if (!is_null($previous_word)) {
+                if (array_key_exists($current_word, $this->chain[$previous_word])) {
+                    $this->chain[$previous_word][$current_word] += 1;
+                } else {
+                    $this->chain[$previous_word][$current_word] = 1;
+                }
+            }
+            if (!array_key_exists($current_word, $this->chain)) {
+                $this->chain[$current_word] = array();
+            }
+            $previous_word = $current_word;
+        }
     }
 }
-?>
