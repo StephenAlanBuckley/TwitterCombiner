@@ -7,12 +7,21 @@ class Markov {
     private $chunk_length = 5;
     private $chain = array();
     private $break_type = self::BREAK_TYPE_CHUNK;
+    private $starting_part = null;
 
     public function __construct() {
     }
 
     public function setChunkLength($length) {
         $this->chunk_length = $length;
+    }
+
+    public function setStartingPart($start) {
+        if (array_key_exists($start, $this->chain)) {
+            $this->starting_part = $start;
+        }
+        $this->starting_part = null;
+        throw new Exception("$start not added to Markov chain. Starting Part reset.");
     }
 
     public function setBreakType($type) {
@@ -35,23 +44,6 @@ class Markov {
                 return $this->addTextToChainByWords($text);
                 break;
         }
-    }
-
-    public function createStringFromChain($length = 100) {
-        //If this is n-gram chunks we don't want a space between, if it's words then we do!
-        $between_parts = '';
-        if ($this->break_type == self::BREAK_TYPE_WORD) {
-            $between_parts = ' ';
-        }
-        $created_string = '';
-        $current_part = array_rand($this->chain);
-        $created_string .= $current_part . $between_parts;
-        while (strlen($created_string) < $length && is_array($this->chain[$current_part])) {
-            $next_part = array_rand($this->chain[$current_part]);
-            $created_string .= $next_part . $between_parts;
-            $current_part = $next_part;
-        }
-        return $created_string;
     }
 
     public function getChain() {
@@ -96,4 +88,26 @@ class Markov {
             $previous_word = $current_word;
         }
     }
+
+    public function createStringFromChain($length = 100) {
+        //If this is n-gram chunks we don't want a space between, if it's words then we do!
+        $between_parts = '';
+        if ($this->break_type == self::BREAK_TYPE_WORD) {
+            $between_parts = ' ';
+        }
+        $created_string = '';
+        if (!is_null($this->starting_part)) {
+            $current_part = $starting_part;
+        } else {
+            $current_part = array_rand($this->chain);
+        }
+        $created_string .= $current_part . $between_parts;
+        while (strlen($created_string) < $length && is_array($this->chain[$current_part])) {
+            $next_part = array_rand($this->chain[$current_part]);
+            $created_string .= $next_part . $between_parts;
+            $current_part = $next_part;
+        }
+        return $created_string;
+    }
+
 }

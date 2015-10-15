@@ -19,35 +19,25 @@ class TwitterMarkov extends Markov {
         parent::__construct();
     }
 
-    public function addTwitterHandle($handle) {
-        $this->twitter_handles[] = $handle;
-        return true;
-    }
-
-    public function removeTwitterHandle($handle) {
-        $remove_at_index = array_search($handle, $this->twitter_handles);
-        if ($remove_at_index === false) {
-            //Handle not in array, therefore basically removed already!
-            return true;
+    public function addTweetsFromUserToChain($handle) {
+        if (array_key_exists($handle, $this->twitter_handles)
+            && array_key_exists('complete_sanitized_text', $this->twitter_handles[$handle])) {
+              $this->addTextToChain($this->twitter_handles[$handle]['complete_sanitized_text']);
+              return true;
         }
-        unset($this->twitter_handles[$remove_at_index]);
-        return true;
+        return false;
     }
 
-    public function getMarkovOfAllAccountsRecentTweets($length = 140) {
-        $all_recent_tweets_text = '';
-        foreach ($this->twitter_handles as $handle) {
-            $recent_tweets = $this->getRecentTweetString($handle);
-            $all_recent_tweets_text .= $recent_tweets;
-        }
-        $markov_table = $this->addTextToChain($all_recent_tweets_text);
-        return $this->createStringFromChain($length);
-    }
-
-    private function getRecentTweetString($twitter_handle, $include_replies = false, $include_retweets = false) {
+    /*
+     * Adds a handle to the private twitter handles array.
+     *
+     * returns count of tweets received from Twitter
+     */
+    public function getRecentTweetsFrom($twitter_handle, $include_replies = false, $include_retweets = false) {
+        $this->twitter_handles[] = $twitter_handle;
         $get_fields ='?screen_name=' . $twitter_handle .
                         '&count=3200&include_rts=' . ($include_retweets ? 'true' : 'false') .
-                        '&exclude_replies=' . ($include_replies ? 'false' : 'true');
+                        '&exclude_replies=' . ($include_replies ? 'false' : 'true'); //looks odd because my param is include and theirs is exclude
         $url = 'https://api.twitter.com/1.1/statuses/user_timeline.json';
         $requestMethod = 'GET';
         $twitter = new TwitterAPIExchange($this->twitter_settings);
@@ -55,12 +45,22 @@ class TwitterMarkov extends Markov {
                      ->buildOauth($url, $requestMethod)
                      ->performRequest();
         $output= json_decode($output);
+        $this->twitter_handles[$twitter_handle]['raw_tweets'] = array();
+        $this->twitter_handles[$twitter_handle]['sanitized_tweets'] = array();
+        $this->twitter_handles[$twitter_handle]['complete_sanitized_text'] = '';
+        if (count($output) <= 0) {
+            return 0;
+        }
         foreach ($output as $tweet) {
+            $this->twitter_handles[$twitter_handle]['raw_tweets'][] = $tweet->text;
             $tweet_text = $this->cleanUpText($tweet->text);
-            $transcript .= strtolower($tweet_text) . " ";
+            $tweet_text = strtolower($tweet_text) . " ";
+            $this->twitter_handles[$twitter_handle]['sanitized_tweets'][] = $tweet_text;
+            $transcript .= $tweet_text;
         }
 
-        return $transcript;
+        $this->twitter_handles[$twitter_handle]['complete_sanitized_text'] = $transcript;
+        return count($this->twitter_handles[$twitter_handle]['sanitized_tweets']);
     }
 
     private function cleanUpText($text) {
