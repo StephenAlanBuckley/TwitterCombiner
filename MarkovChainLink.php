@@ -36,6 +36,34 @@ class MarkovChainLink {
         $this->appearance_count += 1;
     }
 
+    public function getNextLinkWithSources() {
+        $weight_sum = 0;
+        $assume_seed = rand(1, $this->appearance_count);
+        foreach($next_links as $link => $link_info) {
+            $assume_seed -= $link_info['weight'];
+            if ($assume_seed <= 0) {
+                return $link;
+            }
+            $weight_sum += $link_info['weight'];
+        }
+
+        //If we made it here then the assume seed was too big. But now we have an accurate max
+        $assume_seed = rand(1, $weight_sum);
+        foreach($next_links as $link => $link_info) {
+            $assume_seed -= $link_info['weight'];
+            if ($assume_seed <= 0) {
+                return $link;
+            }
+        }
+        $exception_message = 'The assume_seed ran out so weight is broken.';
+        $exception_fields = array();
+        $exception_fields['string_interpretation'] = $this->string_interpretation;
+        $exception_fields['appearance_count'] = $this->appearance_count;
+        $exception_fields['weight_sum'] = $weight_sum;
+        $exception_fields_string = print_r($exception_fields, true);
+        throw new Exception($exception_message . '   ' . $exception_fields_string);
+    }
+
     public function getNextLink() {
         $assume_seed = rand(1, $this->appearance_count);
         foreach($next_links as $link => $link_info) {
