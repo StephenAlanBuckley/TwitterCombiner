@@ -6,16 +6,22 @@ class MarkovChainLink {
     private $next_links = array();
     private $appearance_count = 1;
 
-    public function __construct($text, $appearance_count = 1) {
+    public function __construct($text, $source = null, $appearance_count = 1) {
         $this->string_interpretation = $text;
         $this->appearance_count = $appearance_count;
+        if (!is_null($source)) {
+            $this->addSource($source);
+        }
     }
 
-    public function addOrIncrementNextLink($link) {
+    public function addOrIncrementNextLink($link, $source = null) {
         if (array_key_exists($link, $this->next_links)) {
             $strictlyIncrementNextLinkWeight($link);
         } else {
             $strictlyAddNextLink($link);
+        }
+        if (!is_null($source)) {
+            $this->addSource($source);
         }
     }
 
@@ -36,32 +42,11 @@ class MarkovChainLink {
         $this->appearance_count += 1;
     }
 
-    public function getNextLinkWithSources() {
-        $weight_sum = 0;
-        $assume_seed = rand(1, $this->appearance_count);
-        foreach($next_links as $link => $link_info) {
-            $assume_seed -= $link_info['weight'];
-            if ($assume_seed <= 0) {
-                return $link;
-            }
-            $weight_sum += $link_info['weight'];
+    public function addSource($source) {
+        if (!in_array($source, $this->sources)) {
+            //We lowercase sources so that we don't give a shit about cases
+            $this->sources[] = strtolower($source);
         }
-
-        //If we made it here then the assume seed was too big. But now we have an accurate max
-        $assume_seed = rand(1, $weight_sum);
-        foreach($next_links as $link => $link_info) {
-            $assume_seed -= $link_info['weight'];
-            if ($assume_seed <= 0) {
-                return $link;
-            }
-        }
-        $exception_message = 'The assume_seed ran out so weight is broken.';
-        $exception_fields = array();
-        $exception_fields['string_interpretation'] = $this->string_interpretation;
-        $exception_fields['appearance_count'] = $this->appearance_count;
-        $exception_fields['weight_sum'] = $weight_sum;
-        $exception_fields_string = print_r($exception_fields, true);
-        throw new Exception($exception_message . '   ' . $exception_fields_string);
     }
 
     public function getNextLink() {
