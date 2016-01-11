@@ -91,6 +91,9 @@ class Markov {
 
     public function createStringFromChain($length = 100) {
         //If this is n-gram chunks we don't want a space between, if it's words then we do!
+        if (empty($this->chain) || !isset($this->chain)) {
+            return 0;
+        }
         $between_parts = '';
         if ($this->break_type == self::BREAK_TYPE_WORD) {
             $between_parts = ' ';
@@ -102,10 +105,15 @@ class Markov {
             $current_part = array_rand($this->chain);
         }
         $created_string .= $current_part . $between_parts;
-        while (strlen($created_string) < $length && is_array($this->chain[$current_part])) {
-            $next_part = array_rand($this->chain[$current_part]);
-            $created_string .= $next_part . $between_parts;
-            $current_part = $next_part;
+        try {
+            while (strlen($created_string) < $length && is_array($this->chain[$current_part])) {
+                $next_part = array_rand($this->chain[$current_part]);
+                $created_string .= $next_part . $between_parts;
+                $current_part = $next_part;
+            }
+        } catch (Exception $e) {
+            print_r("FOUND THIS FOR CURRENT PART:" . $current_part);
+            throw $e;
         }
         return $created_string;
     }

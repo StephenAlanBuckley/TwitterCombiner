@@ -10,6 +10,8 @@
                   \/     \/                  <___>
  */
 
+require_once 'MarkovChainLink.php';
+
 class MarkovChain {
 
     private $heads = array();  //Each source will have its own head
