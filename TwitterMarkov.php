@@ -45,7 +45,7 @@ class TwitterMarkov extends Markov {
                      ->buildOauth($url, $requestMethod)
                      ->performRequest();
         $output= json_decode($output);
-        if (count($output->errors) > 0) {
+        if (is_object($output) && count($output->errors) > 0) {
             return array("had_errors" => true, "errors" => $output->errors);
         }
         $this->twitter_handles[$twitter_handle]['raw_tweets'] = array();
@@ -54,6 +54,7 @@ class TwitterMarkov extends Markov {
         if (count($output) <= 0) {
             return 0;
         }
+        $transcript = "";
         foreach ($output as $tweet) {
             $this->twitter_handles[$twitter_handle]['raw_tweets'][] = $tweet->text;
             $tweet_text = $this->cleanUpText($tweet->text);
